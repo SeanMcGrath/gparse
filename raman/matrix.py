@@ -35,7 +35,16 @@ class DistanceMatrix:
 		return self.__matrix[key]
 
 	def __eq__(self, other):
-		return self.__matrix == other.__matrix and self.units == other.units
+		if not type(other) is type(self):
+			return False
+		if not self.units[0] == other.units[0]:
+			return False
+		for a, b in zip(self.__matrix, other.__matrix):
+			for c, d in zip(a, b):
+				if c != d:
+					return False
+
+		return True
 
 	def __len__(self):
 		if not self.__matrix:
@@ -55,8 +64,8 @@ class DistanceMatrix:
 		new_matrix = []
 		for row in self.__matrix:
 			new_matrix.append([item + other for item in row])
-		self.__matrix = new_matrix
-		return self
+
+		return DistanceMatrix(new_matrix, self.units)
 
 	@property
 	def flattened(self):
@@ -112,7 +121,7 @@ class DistanceMatrix:
 		for line in lines:
 			if len(line) == highest_line_length + 1:
 				if all(is_numeric(item) for item in line):
-					matrix.append(line)
+					matrix.append([float(item) for item in line])
 					highest_line_length += 1
 			else:
 				raise ValueError('Data lines in input file should be in order of ascending length.')

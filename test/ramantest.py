@@ -97,7 +97,11 @@ class TestDistanceMatrix(unittest.TestCase):
 			self.assertEqual(from_test, from_flattened)
 
 	def test_rms_deviation(self):
-		pass
+
+		# Shifting matrix should change RMS by value of shift
+		for i in range(1,10):
+			shifted_matrix = self.test_matrix >> i
+			self.assertEqual(self.test_matrix.rms_deviation(shifted_matrix), i)
 
 if __name__ == '__main__':
     unittest.main()
