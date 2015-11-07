@@ -9,6 +9,9 @@ Issued under the MIT licenese.
 import unittest
 import raman
 
+def triangular_number(n):
+    return n * (n + 1) // 2
+
 class TestUtilities(unittest.TestCase):
 	"""
 	Test the methods in raman.util
@@ -52,6 +55,49 @@ class TestSpectrum(unittest.TestCase):
 
 		self.assertEqual(test_spectrum, test_spectrum2)
 
+
+class TestDistanceMatrix(unittest.TestCase):
+	"""
+	Tests for DistanceMatrix class.
+	"""
+
+	def setUp(self):
+		self.test_matrix = raman.DistanceMatrix.from_csv('test_matrix.csv')
+
+	def test_len(self):
+		test_cases = [((), 0), 
+					([(1,2), (1,2,3), (1,2,3,4)], 4)]
+		for matrix, length in test_cases:
+			self.assertEqual(len(raman.DistanceMatrix(matrix)), length)
+
+	def test_rshift(self):
+		test = raman.DistanceMatrix([(1,2), (3,4)])
+		test2 = raman.DistanceMatrix([(2, 3), (4,5)])
+		self.assertEqual(test >> 1, test2)
+
+	def test_from_csv(self):
+		self.assertRaises(ValueError, raman.DistanceMatrix.from_csv, 'ramantest.py')
+
+		with open('test_matrix.csv') as csv_file:
+			test_matrix2 = raman.DistanceMatrix.from_csv(csv_file)
+			self.assertEqual(self.test_matrix, test_matrix2)
+
+	def test_flattened(self):
+		flat_matrix = self.test_matrix.flattened
+
+		# Test that length is preserved
+		correct_length = sum([len(row) for row in self.test_matrix])
+		self.assertEqual(len(flat_matrix), correct_length)
+
+		# Test that order is preserved
+		highest_index = len(self.test_matrix)
+		for i, j in zip(range(1, highest_index), range(highest_index - 1)):
+			from_test = self.test_matrix[i][j]
+			from_flattened = flat_matrix[triangular_number(i) + j]
+			self.assertEqual(from_test, from_flattened)
+
+	def test_rms_deviation(self):
+		pass
 
 if __name__ == '__main__':
     unittest.main()

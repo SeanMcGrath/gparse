@@ -93,7 +93,7 @@ class Spectrum:
 
 		if isinstance(csv_file, str):
 			if not csv_file.endswith('.csv'):
-				raise ValueError('Filetype must be .csv to create a spectrum.')
+				raise ValueError('Filetype must be .csv to create a Spectrum.')
 
 			with open(csv_file, 'r') as f:
 				return Spectrum.from_csv(f)

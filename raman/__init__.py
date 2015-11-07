@@ -11,3 +11,4 @@ __license__ = 'MIT'
 __copyright__ = 'Copyright 2015 Sean McGrath'
 
 from .spectrum import Spectrum
+from .matrix import DistanceMatrix
