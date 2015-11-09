@@ -1,5 +1,7 @@
 """
-Package for parsing, manipulating, analyzing and plotting raman spectral data.
+Package for parsing, manipulating, analyzing and plotting
+raman spectral data. Also provides utilities for correlating
+raman data with the molecular structures which produce them.
 
 Copyright Sean McGrath 2015. Issued under the MIT License.
 """
