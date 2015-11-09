@@ -38,10 +38,10 @@ class Spectrum:
         :param points: The number of points in the spectrum for plotting.
         """
 
-        self.frequencies = frequencies
-        self.intensities = intensities
-        self.x_array = linspace(0, max(self.frequencies), points)
-        self.lorentzian = self.lorentzian_sum(width)
+        self.frequencies        = frequencies
+        self.intensities        = intensities
+        self.x_array            = linspace(min(self.frequencies), max(self.frequencies), points)
+        self.lorentzian_width   = width
 
     def __eq__(self, other):
         if type(self) is not type(other):
@@ -52,17 +52,41 @@ class Spectrum:
     def __len__(self):
         return len(self.frequencies)
 
-    def lorentzian_sum(self, width):
+    def __sub__(self, other):
+        """
+        Subtract the lorentzians of two spectra.
+        """
+
+        # Need a common x array
+        highest_frequency = max(max(self.frequencies), max(other.frequencies))
+        lowest_frequency = min(min(self.frequencies), min(other.frequencies))
+        x_array = linspace(lowest_frequency, highest_frequency, self.NUMBER_OF_POINTS)
+
+        # Need shallow copy of this spectrum
+        self_copy = self.copy()
+
+        self_copy.x_array = x_array
+        other.x_array = x_array
+
+        return [self_val - other_val for self_val, other_val \
+            in zip(self_copy.lorentzian(), other.lorentzian())]
+
+
+    def lorentzian(self, width=None):
         """
         Constructs a sum of lorentzians with the given width about the spectral points.
         :param width: the width of each lorentzian, in x-axis units
         """
 
+        if not width:
+            width = self.lorentzian_width
+
         lorentzians = []
 
         for frequency, intensity in zip(self.frequencies, self.intensities):
             lorentzians.append(
-                [lorentzian(point, intensity, frequency, width) for point in self.x_array])
+                [lorentzian(point, intensity, frequency, width) \
+                    for point in self.x_array])
 
         return [sum(i) for i in zip(*lorentzians)]
 
@@ -73,19 +97,29 @@ class Spectrum:
         :param kwargs: keyword arguments to be passed to matplotlib.Axis.plot
         """
 
-        axis.plot(self.x_array, self.lorentzian, **kwargs)
+        axis.plot(self.x_array, self.lorentzian(), **kwargs)
 
-    @property
-    def integral(self):
+    def copy(self):
+        """
+        Create a shallow copy of this spectrum.
+        """
+
+        return Spectrum(self.frequencies, self.intensities, len(self.x_array), self.lorentzian_width)
+
+    def integral(self, width=None):
         """
         Compute the numeric integral of the lorentzian fit to the spectrum.
+        :param width: width of lorentzians in the spectrum.
         """
 
+        if not width:
+            width = self.lorentzian_width
+
         interval = self.x_array[1] - self.x_array[0]
-        return sum([value * interval for value in self.lorentzian])
+        return sum([value * interval for value in self.lorentzian()])
 
     @staticmethod
-    def from_csv(csv_file, points=NUMBER_OF_POINTS):
+    def from_csv(csv_file, points=NUMBER_OF_POINTS, width=LORENTZIAN_WIDTH):
         """
         Create a spectrum from a .csv file of frequency-intensity pairs.
         :param csv_file: the path to a .csv file or an opened file object.
@@ -108,4 +142,4 @@ class Spectrum:
                     frequencies.append(float(line[0]))
                     intensities.append(float(line[1]))
 
-            return Spectrum(frequencies, intensities, points)
+            return Spectrum(frequencies, intensities, points, width)

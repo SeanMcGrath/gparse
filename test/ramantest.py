@@ -42,13 +42,13 @@ class TestSpectrum(unittest.TestCase):
     """
 
     def setUp(self):
-        frequencies = range(100)
-        intensities = range(0, 1000, 10)
+        frequencies = list(range(100))
+        intensities = list(range(0, 1000, 10))
         self.spectrum = raman.Spectrum(frequencies, intensities)
 
-    def test_lorentzian_sum(self):
+    def test_lorentzian(self):
         self.assertEqual(
-            len(self.spectrum.lorentzian_sum(20)),
+            len(self.spectrum.lorentzian(20)),
             len(self.spectrum.x_array))
 
     def test_from_csv(self):
@@ -60,6 +60,10 @@ class TestSpectrum(unittest.TestCase):
             test_spectrum2 = raman.Spectrum.from_csv(csv_file)
 
         self.assertEqual(test_spectrum, test_spectrum2)
+
+    def test_subtraction(self):
+
+        self.assertFalse(any(self.spectrum - self.spectrum))
 
 
 class TestDistanceMatrix(unittest.TestCase):
