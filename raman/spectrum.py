@@ -69,7 +69,7 @@ class Spectrum:
         """
 
         difference_function = lambda x: self.fit_function(x) - other.fit_function(x)
-        return [difference_function(x) for x in self.x_array]
+        return difference_function
 
     @property
     def fit_function(self):
@@ -133,3 +133,5 @@ class Spectrum:
                     intensities.append(float(line[1]))
 
             return Spectrum(frequencies, intensities, points, width)
+
+

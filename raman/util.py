@@ -14,7 +14,7 @@ def is_numeric(string):
     try:
         float(string)
         return True
-    except:
+    except ValueError:
         return False
 
 def linspace(start, end, number_of_points):
@@ -45,6 +45,22 @@ def integrate(x_array, y_array):
     integral = 0
     while i < len(x_array) - 2:
         average = (y_array[i] + y_array[i+1]) / 2
+        interval = x_array[i+1] - x_array[i]
+        integral += average * interval
+        i += 1
+
+    return integral
+
+def integrate_function(function, x_array):
+    """
+    Calculate the numeric integral of a function along a given x array.
+    :param function: a callable function that returns numbers.
+    :x_array: a list of ascending number along which to integrate.
+    """
+
+    i = integral = 0
+    while i < len(x_array) - 2:
+        average = (function(x_array[i]) + function(x_array[i+1])) / 2
         interval = x_array[i+1] - x_array[i]
         integral += average * interval
         i += 1

@@ -60,7 +60,9 @@ class TestSpectrum(unittest.TestCase):
 
     def test_subtraction(self):
 
-        self.assertFalse(any(self.spectrum - self.spectrum))
+        diff_function = self.spectrum - self.spectrum
+        for x in self.spectrum.x_array:
+            self.assertEqual(diff_function(x), 0)
 
 
 class TestDistanceMatrix(unittest.TestCase):
@@ -70,6 +72,16 @@ class TestDistanceMatrix(unittest.TestCase):
 
     def setUp(self):
         self.test_matrix = raman.DistanceMatrix.from_csv('test_matrix.csv')
+
+    def test_sub(self):
+        sub_test = self.test_matrix - self.test_matrix
+        for row in sub_test:
+            for item in row:
+                self.assertEqual(item, 0)
+
+    def test_eq(self):
+        self.assertEqual(self.test_matrix, self.test_matrix)
+        self.assertFalse(self.test_matrix == ['1'])
 
     def test_len(self):
         test_cases = [((), 0), 

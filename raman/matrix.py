@@ -35,16 +35,25 @@ class DistanceMatrix:
         return self.__matrix[key]
 
     def __eq__(self, other):
-        if not type(other) is type(self):
-            return False
-        if not self.units[0] == other.units[0]:
-            return False
-        for self_row, other_row in zip(self.__matrix, other.__matrix):
-            for self_item, other_item in zip(self_row, other_row):
-                if self_item != other_item:
-                    return False
+        try:
+            if not self.units[0] == other.units[0]:
+                return False
+            for self_row, other_row in zip(self, other):
+                for self_item, other_item in zip(self_row, other_row):
+                    if self_item != other_item:
+                        return False
 
-        return True
+            return True
+        except (AttributeError, ValueError):
+            return False
+
+    def __sub__(self, other):
+        new_matrix = []
+        for self_row, other_row in zip(self, other):
+            new_matrix.append(
+                [self_item - other_item \
+                    for self_item, other_item in zip(self_row, other_row)])
+        return DistanceMatrix(new_matrix, self.units)
 
     def __len__(self):
         if not self.__matrix:
@@ -112,7 +121,7 @@ class DistanceMatrix:
         # Strip trailing empty strings if they exist
         try:
             [line.remove('') for line in lines]
-        except:
+        except ValueError:
             pass
 
         highest_line_length = 0
