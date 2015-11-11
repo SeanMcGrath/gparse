@@ -6,6 +6,7 @@ Part of package raman.
 Copyright Sean McGrath 2015. Issued under the MIT License.
 """
 
+
 def is_numeric(string):
     """
     Test if a string is purely numeric.
@@ -17,6 +18,14 @@ def is_numeric(string):
     except ValueError:
         return False
 
+
+def flatten(array):
+    """
+    Return a flattened copy of a list of lists.
+    """
+    return [item for row in array for item in row]
+
+
 def linspace(start, end, number_of_points):
     """
     Generate a list of floats from start to end containing number_of_points elements.
@@ -26,11 +35,13 @@ def linspace(start, end, number_of_points):
     :param number_of_points: number of points in returned list.
     """
     if start >= end:
-        raise ValueError('The starting value must be less than the ending value.')
+        raise ValueError(
+            'The starting value must be less than the ending value.')
     if number_of_points < 2:
         raise ValueError('The space must contain at least two points.')
-    interval = (end-start)/(number_of_points-1)
-    return [start + interval*i for i in range(number_of_points)]
+    interval = (end - start) / (number_of_points - 1)
+    return [start + interval * i for i in range(number_of_points)]
+
 
 def integrate(x_array, y_array):
     """
@@ -44,12 +55,13 @@ def integrate(x_array, y_array):
     i = 0
     integral = 0
     while i < len(x_array) - 2:
-        average = (y_array[i] + y_array[i+1]) / 2
-        interval = x_array[i+1] - x_array[i]
+        average = (y_array[i] + y_array[i + 1]) / 2
+        interval = x_array[i + 1] - x_array[i]
         integral += average * interval
         i += 1
 
     return integral
+
 
 def integrate_function(function, x_array):
     """
@@ -60,8 +72,8 @@ def integrate_function(function, x_array):
 
     i = integral = 0
     while i < len(x_array) - 2:
-        average = (function(x_array[i]) + function(x_array[i+1])) / 2
-        interval = x_array[i+1] - x_array[i]
+        average = (function(x_array[i]) + function(x_array[i + 1])) / 2
+        interval = x_array[i + 1] - x_array[i]
         integral += average * interval
         i += 1
 

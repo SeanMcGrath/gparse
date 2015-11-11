@@ -8,7 +8,7 @@ Issued under the MIT licenese.
 
 import unittest
 import raman
-
+import copy
 
 def triangular_number(n):
     """
@@ -31,9 +31,13 @@ class TestUtilities(unittest.TestCase):
             self.assertFalse(raman.util.is_numeric(not_numeric))
 
     def test_linspace(self):
-        self.assertEqual(len(raman.util.linspace(0,10,100)), 100)
+        self.assertEqual(len(raman.util.linspace(0, 10, 100)), 100)
         self.assertRaises(ValueError, raman.util.linspace, 10, 0, 100)
         self.assertRaises(ValueError, raman.util.linspace, 0, 10, 1)
+
+    def test_flatten(self):
+        test_list = [['a'], ['b'], ['c']]
+        self.assertEqual(raman.util.flatten(test_list), ['a', 'b', 'c'])
 
 
 class TestSpectrum(unittest.TestCase):
@@ -54,7 +58,7 @@ class TestSpectrum(unittest.TestCase):
     def test_from_csv(self):
 
         self.assertRaises(ValueError, raman.Spectrum.from_csv, 'ramantest.py')
-        
+
         test_spectrum = raman.Spectrum.from_csv('test_spectrum.csv')
         self.assertTrue(len(test_spectrum) > 10)
 
@@ -63,6 +67,12 @@ class TestSpectrum(unittest.TestCase):
         diff_function = self.spectrum - self.spectrum
         for x in self.spectrum.x_array:
             self.assertEqual(diff_function(x), 0)
+
+    def test_from_log_file(self):
+
+        test_spectrum = raman.Spectrum.from_log_file('test_log.log')
+        self.assertTrue(all(map(raman.util.is_numeric, self.spectrum.frequencies)))
+        self.assertTrue(all(map(raman.util.is_numeric, self.spectrum.intensities)))
 
 
 class TestDistanceMatrix(unittest.TestCase):
@@ -84,22 +94,28 @@ class TestDistanceMatrix(unittest.TestCase):
         self.assertFalse(self.test_matrix == ['1'])
 
     def test_len(self):
-        test_cases = [((), 0), 
-                    ([(1,2), (1,2,3), (1,2,3,4)], 4)]
+        test_cases = [((), 0),
+                      ([(1, 2), (1, 2, 3), (1, 2, 3, 4)], 4)]
         for matrix, length in test_cases:
             self.assertEqual(len(raman.DistanceMatrix(matrix)), length)
 
     def test_rshift(self):
-        test = raman.DistanceMatrix([(1,2), (3,4)])
-        test2 = raman.DistanceMatrix([(2, 3), (4,5)])
+        test = raman.DistanceMatrix([(1, 2), (3, 4)])
+        test2 = raman.DistanceMatrix([(2, 3), (4, 5)])
         self.assertEqual(test >> 1, test2)
 
     def test_from_csv(self):
-        self.assertRaises(ValueError, raman.DistanceMatrix.from_csv, 'ramantest.py')
+        self.assertRaises(
+            ValueError, raman.DistanceMatrix.from_csv, 'ramantest.py')
 
         with open('test_matrix.csv') as csv_file:
             test_matrix2 = raman.DistanceMatrix.from_csv(csv_file)
             self.assertEqual(self.test_matrix, test_matrix2)
+
+    def test_from_log_file(self):
+        test_matrix = raman.DistanceMatrix.from_log_file('test_log.log')
+        self.assertTrue(all([row[-1] == 0 for row in test_matrix]))
+        self.assertEqual(test_matrix, self.test_matrix)
 
     def test_flattened(self):
         flat_matrix = self.test_matrix.flattened
@@ -118,9 +134,14 @@ class TestDistanceMatrix(unittest.TestCase):
     def test_rms_deviation(self):
 
         # Shifting matrix should change RMS by value of shift
-        for i in range(1,10):
+        for i in range(1, 10):
             shifted_matrix = self.test_matrix >> i
             self.assertEqual(self.test_matrix.rms_deviation(shifted_matrix), i)
+
+        added_matrix = copy.deepcopy(self.test_matrix)
+        added_matrix[10][5] = 1000
+
+        self.assertTrue(self.test_matrix.rms_deviation(added_matrix) > 0)
 
 
 if __name__ == '__main__':

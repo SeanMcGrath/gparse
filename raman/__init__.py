@@ -14,3 +14,4 @@ __copyright__ = 'Copyright 2015 Sean McGrath'
 
 from .spectrum import Spectrum
 from .matrix import DistanceMatrix
+from .configuration import Configuration

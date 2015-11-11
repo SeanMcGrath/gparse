@@ -6,8 +6,9 @@ Part of raman package.
 Copyright Sean McGrath 2015. Issued under the MIT License.
 """
 
+import re
 from math import sqrt
-from .util import is_numeric
+from .util import is_numeric, flatten
 
 
 class DistanceMatrix:
@@ -19,6 +20,9 @@ class DistanceMatrix:
     SUPPORTED_UNITS = ('a', 'angstroms', 'nm', 'nanometers')
     DEFAULT_UNIT = 'angstroms'
 
+    # Identifies distance matrix entries in Gaussian .log files
+    MATRIX_REGEX = re.compile(r'^\s*\d+\s*[A-Z]\s*(\d+\.\d+\s*)+$')
+
     def __init__(self, matrix, units=DEFAULT_UNIT):
         """
         Constructor.
@@ -28,11 +32,15 @@ class DistanceMatrix:
 
         self.__matrix = matrix
         if units not in self.SUPPORTED_UNITS:
-            raise ValueError('Given units must be one of ' + str(self.SUPPORTED_UNITS))
+            raise ValueError('Given units must be one of ' +
+                             str(self.SUPPORTED_UNITS))
         self.units = units
 
     def __getitem__(self, key):
         return self.__matrix[key]
+
+    def __setitem__(self, key, value):
+        self.__matrix[key] = value
 
     def __eq__(self, other):
         try:
@@ -51,8 +59,8 @@ class DistanceMatrix:
         new_matrix = []
         for self_row, other_row in zip(self, other):
             new_matrix.append(
-                [self_item - other_item \
-                    for self_item, other_item in zip(self_row, other_row)])
+                [self_item - other_item
+                 for self_item, other_item in zip(self_row, other_row)])
         return DistanceMatrix(new_matrix, self.units)
 
     def __len__(self):
@@ -82,7 +90,7 @@ class DistanceMatrix:
         Get a copy of all the values in the matrix in flattened (1D) form.
         """
 
-        return [item for row in self.__matrix for item in row]
+        return flatten(self.__matrix)
 
     def rms_deviation(self, other):
         """
@@ -136,3 +144,49 @@ class DistanceMatrix:
                     'Data lines in input file should be in order of ascending length.')
 
         return DistanceMatrix(matrix, units)
+
+    @staticmethod
+    def from_log_file(filename):
+        """
+        Parse a Gaussian .log file and create a DistanceMatrix.
+        :param filename: the path to the .log file
+        """
+
+        with open(filename) as open_file:
+            lines = open_file.readlines()
+
+        # find the distance matrix lines, clean and split them
+        split_lines = []
+        for line in lines:
+            if re.match(DistanceMatrix.MATRIX_REGEX, line.strip()):
+                split_lines.append(line.strip().split())
+            # Distance matrix is always terminated by a line containing 'stoich'
+            if 'stoich' in line.lower():
+                break
+
+        # Build the matrix line by line
+        number_atoms = max([int(line[0]) for line in split_lines])
+
+        # Need a matrix to insert values in
+        temp_matrix = [[None for i in range(number_atoms)] for i in range(number_atoms)]
+
+        # now we iterate through the lines: the first number in each line
+        # is the atom number. We use this to index into the matrix.
+        old_index = 0
+        column_offset = 0
+        for line in split_lines:
+            current_column = 0
+            current_index = int(line[0]) - 1
+            if current_index < old_index:
+                column_offset += 5
+            if current_index is 1:
+                column_offset = 0
+            while current_column < len(line) - 2:
+                distance = line[current_column+2]
+                temp_matrix[current_index][current_column + column_offset] = distance
+                current_column += 1
+            old_index = current_index
+
+        matrix = [[float(item) for item in row if item] for row in temp_matrix]
+
+        return DistanceMatrix(matrix)

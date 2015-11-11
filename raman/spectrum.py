@@ -6,7 +6,7 @@ Part of package raman.
 Copyright Sean McGrath 2015. Issued under the MIT License.
 """
 
-from .util import linspace, is_numeric, integrate
+from .util import linspace, is_numeric, integrate, flatten
 from functools import partial
 
 
@@ -41,15 +41,16 @@ class Spectrum:
 
         self.frequencies = frequencies
         self.intensities = intensities
-        self.x_array = linspace(min(self.frequencies), max(self.frequencies), points)
+        self.x_array = linspace(min(self.frequencies),
+                                max(self.frequencies), points)
         self.lorentzian_width = width
 
         # Construct the fit function
         lorentzians = []
         for frequency, intensity in zip(self.frequencies, self.intensities):
             lorentzians.append(
-                partial(lorentzian, \
-                    amplitude=intensity, center=frequency, width=self.lorentzian_width))
+                partial(lorentzian,
+                        amplitude=intensity, center=frequency, width=self.lorentzian_width))
 
         self._fit_function = lambda x: sum([f(x) for f in lorentzians])
 
@@ -68,7 +69,8 @@ class Spectrum:
         evaluated at all points in this spectrum's x_array
         """
 
-        difference_function = lambda x: self.fit_function(x) - other.fit_function(x)
+        difference_function = lambda x: self.fit_function(
+            x) - other.fit_function(x)
         return difference_function
 
     @property
@@ -100,8 +102,8 @@ class Spectrum:
         Create a shallow copy of this spectrum.
         """
 
-        return Spectrum(self.frequencies, self.intensities, \
-            len(self.x_array), self.lorentzian_width)
+        return Spectrum(self.frequencies, self.intensities,
+                        len(self.x_array), self.lorentzian_width)
 
     @property
     def integral(self):
@@ -134,4 +136,25 @@ class Spectrum:
 
             return Spectrum(frequencies, intensities, points, width)
 
+    @staticmethod
+    def from_log_file(filename):
+        """
+        Parse a Gaussian .log file and create a Spectrum.
+        :param filename: the path to the .log file
+        """
 
+        def _parse_line(line):
+            """
+            Parse the numbers from a line.
+            """
+            return [float(item) for item in line.split() if is_numeric(item)]
+
+        with open(filename) as open_file:
+            lines = open_file.readlines()
+
+        frequencies = flatten([_parse_line(line.strip())
+                               for line in lines if 'Frequencies' in line])
+        intensities = flatten([_parse_line(line.strip())
+                               for line in lines if 'Raman Activ' in line])
+
+        return Spectrum(frequencies, intensities)
