@@ -124,7 +124,7 @@ class Spectrum:
         return integrate(self.x_array(points), self.as_list(points))
 
     @staticmethod
-    def from_csv(csv_file, points=NUMBER_OF_POINTS, width=LORENTZIAN_WIDTH):
+    def from_csv(csv_file, width=LORENTZIAN_WIDTH):
         """
         Create a spectrum from a .csv file of frequency-intensity pairs.
         :param csv_file: the path to a .csv file.
