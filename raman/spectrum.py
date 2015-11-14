@@ -27,11 +27,13 @@ class Spectrum:
     Consists of a set of frequencies and their corresponding intensities.
     """
 
+    # Default number of points in the list representation of a spectrum.
     NUMBER_OF_POINTS = 1000
+
+    # Default width of lorentzians fitted to the data.
     LORENTZIAN_WIDTH = 20
 
-    def __init__(self, frequencies, intensities,
-                 points=NUMBER_OF_POINTS, width=LORENTZIAN_WIDTH):
+    def __init__(self, frequencies, intensities, width=LORENTZIAN_WIDTH):
         """
         Constructor.
         :param frequencies: a list of frequencies (floats)
@@ -39,10 +41,10 @@ class Spectrum:
         :param points: The number of points in the spectrum for plotting.
         """
 
+        if len(frequencies) != len(intensities):
+            raise ValueError('There must be an equal number of frequencies and intensities.')
         self.frequencies = frequencies
         self.intensities = intensities
-        self.x_array = linspace(min(self.frequencies),
-                                max(self.frequencies), points)
         self.lorentzian_width = width
 
         # Construct the fit function
@@ -65,12 +67,12 @@ class Spectrum:
 
     def __sub__(self, other):
         """
-        Subtract two spectra - returns the difference of the lorentzian fits,
-        evaluated at all points in this spectrum's x_array
+        Subtract two spectra - returns a function describing the
+        diffence spectrum.
         """
 
-        difference_function = lambda x: self.fit_function(
-            x) - other.fit_function(x)
+        difference_function = \
+            lambda x: self.fit_function(x) - other.fit_function(x)
         return difference_function
 
     @property
@@ -80,39 +82,46 @@ class Spectrum:
         """
         return self._fit_function
 
-    @property
-    def lorentzian(self):
+    def x_array(self, points=NUMBER_OF_POINTS):
         """
-        Constructs a sum of lorentzians with the given width about the spectral points.
+        Compute an array of values needed for plotting the
+        x-axis of a spectrum.
         """
 
-        return [self.fit_function(x) for x in self.x_array]
+        return linspace(min(self.frequencies), max(self.frequencies), points)
 
-    def plot(self, axis, **kwargs):
+    def as_list(self, points=NUMBER_OF_POINTS):
+        """
+        Constructs a sum of lorentzians about the spectral points,
+        and evaluates it at the given number of points.
+        """
+
+        return [self.fit_function(x) for x in self.x_array(points)]
+
+    def plot(self, axis, points=NUMBER_OF_POINTS, **kwargs):
         """
         Plot the lorentzian representation of the spectrum.
         :param ax: a matplotlib axis object on which to plot.
         :param kwargs: keyword arguments to be passed to matplotlib.Axis.plot
         """
 
-        axis.plot(self.x_array, self.lorentzian, **kwargs)
+        axis.plot(self.x_array(points), self.as_list(points), **kwargs)
 
     def copy(self):
         """
         Create a shallow copy of this spectrum.
         """
 
-        return Spectrum(self.frequencies, self.intensities,
-                        len(self.x_array), self.lorentzian_width)
+        return Spectrum(self.frequencies, self.intensities, self.lorentzian_width)
 
     @property
-    def integral(self):
+    def integral(self, points=NUMBER_OF_POINTS):
         """
         Compute the numeric integral of the lorentzian fit to the spectrum.
-        :param width: width of lorentzians in the spectrum.
+        :param points: number of points to integrate over.
         """
 
-        return integrate(self.x_array, self.lorentzian)
+        return integrate(self.x_array(points), self.as_list(points))
 
     @staticmethod
     def from_csv(csv_file, points=NUMBER_OF_POINTS, width=LORENTZIAN_WIDTH):
@@ -134,7 +143,7 @@ class Spectrum:
                     frequencies.append(float(line[0]))
                     intensities.append(float(line[1]))
 
-            return Spectrum(frequencies, intensities, points, width)
+            return Spectrum(frequencies, intensities, width)
 
     @staticmethod
     def from_log_file(filename):

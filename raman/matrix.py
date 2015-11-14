@@ -187,6 +187,7 @@ class DistanceMatrix:
                 current_column += 1
             old_index = current_index
 
+        # Temp matrix has placeholder elements - remove them
         matrix = [[float(item) for item in row if item] for row in temp_matrix]
 
         return DistanceMatrix(matrix)

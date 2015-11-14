@@ -52,8 +52,8 @@ class TestSpectrum(unittest.TestCase):
 
     def test_lorentzian(self):
         self.assertEqual(
-            len(self.spectrum.lorentzian),
-            len(self.spectrum.x_array))
+            len(self.spectrum.as_list()),
+            len(self.spectrum.x_array()))
 
     def test_from_csv(self):
 
@@ -65,7 +65,7 @@ class TestSpectrum(unittest.TestCase):
     def test_subtraction(self):
 
         diff_function = self.spectrum - self.spectrum
-        for x in self.spectrum.x_array:
+        for x in self.spectrum.x_array():
             self.assertEqual(diff_function(x), 0)
 
     def test_from_log_file(self):
@@ -92,10 +92,11 @@ class TestDistanceMatrix(unittest.TestCase):
     def test_eq(self):
         self.assertEqual(self.test_matrix, self.test_matrix)
         self.assertFalse(self.test_matrix == ['1'])
+        self.assertFalse(self.test_matrix == self.test_matrix >> 1)
 
     def test_len(self):
-        test_cases = [((), 0),
-                      ([(1, 2), (1, 2, 3), (1, 2, 3, 4)], 4)]
+        test_cases = \
+            [((), 0), ([(1, 2), (1, 2, 3), (1, 2, 3, 4)], 4)]
         for matrix, length in test_cases:
             self.assertEqual(len(raman.DistanceMatrix(matrix)), length)
 
@@ -115,6 +116,8 @@ class TestDistanceMatrix(unittest.TestCase):
     def test_from_log_file(self):
         test_matrix = raman.DistanceMatrix.from_log_file('test_log.log')
         self.assertTrue(all([row[-1] == 0 for row in test_matrix]))
+        self.assertTrue(
+            all([all([item != 0 for item in row[:-1]]) for row in test_matrix]))
         self.assertEqual(test_matrix, self.test_matrix)
 
     def test_flattened(self):
