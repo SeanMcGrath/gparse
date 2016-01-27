@@ -141,10 +141,15 @@ class TestDistanceMatrix(unittest.TestCase):
             shifted_matrix = self.test_matrix >> i
             self.assertEqual(self.test_matrix.rms_deviation(shifted_matrix), i)
 
+        # differing by even 1 element should give non-zero deviation
         added_matrix = copy.deepcopy(self.test_matrix)
         added_matrix[10][5] = 1000
-
         self.assertTrue(self.test_matrix.rms_deviation(added_matrix) > 0)
+
+        # Test low-pass distance filter
+        self.assertTrue(self.test_matrix.rms_deviation(added_matrix) != \
+            self.test_matrix.rms_deviation(added_matrix, 5))
+
 
 
 if __name__ == '__main__':

@@ -92,10 +92,12 @@ class DistanceMatrix:
 
         return flatten(self.__matrix)
 
-    def rms_deviation(self, other):
+    def rms_deviation(self, other, distance_threshold=None):
         """
         Calculate the root mean square deviation between two matrices.
         :param other: the other matrix to compare to this matrix.
+        :param distance_threshold: a distance under which an entry in the matrix must
+            fall in order to be factored into the RMS.
         """
 
         if len(self) != len(other):
@@ -103,8 +105,15 @@ class DistanceMatrix:
         if self.units != other.units:
             raise ValueError('Matrices to compare must have the same units.')
 
-        squared_differences = [
-            (a - b)**2 for a, b in zip(self.flattened, other.flattened)]
+        if distance_threshold:
+            squared_differences = \
+                [(a - b)**2 for a, b in zip(self.flattened, other.flattened) \
+                if abs(a - b) < distance_threshold]
+
+        else:
+            squared_differences = \
+                [(a - b)**2 for a, b in zip(self.flattened, other.flattened)]
+
         return sqrt(sum(squared_differences) / len(squared_differences))
 
     @staticmethod

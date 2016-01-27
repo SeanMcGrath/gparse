@@ -6,8 +6,8 @@ Part of package raman.
 Copyright Sean McGrath 2015. Issued under the MIT License.
 """
 
-from .util import linspace, is_numeric, integrate, flatten
 from functools import partial
+from .util import linspace, is_numeric, integrate, flatten
 
 
 def lorentzian(x_value, amplitude, center, width):
@@ -31,7 +31,7 @@ class Spectrum:
     NUMBER_OF_POINTS = 1000
 
     # Default width of lorentzians fitted to the data.
-    LORENTZIAN_WIDTH = 20
+    LORENTZIAN_WIDTH = 10
 
     def __init__(self, frequencies, intensities, width=LORENTZIAN_WIDTH):
         """
@@ -82,12 +82,13 @@ class Spectrum:
         """
         return self._fit_function
 
-    def x_array(self, points=NUMBER_OF_POINTS):
+    def x_array(self, x_min=None, x_max=None, points=NUMBER_OF_POINTS):
         """
         Compute an array of values needed for plotting the
         x-axis of a spectrum.
         """
-
+        x_min = x_min or min(self.frequencies)
+        x_max = x_max or max(self.frequencies)
         return linspace(min(self.frequencies), max(self.frequencies), points)
 
     def as_list(self, points=NUMBER_OF_POINTS):
