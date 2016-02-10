@@ -70,9 +70,16 @@ class TestSpectrum(unittest.TestCase):
 
     def test_from_log_file(self):
 
-        test_spectrum = raman.Spectrum.from_log_file('test_log.log')
-        self.assertTrue(all(map(raman.util.is_numeric, self.spectrum.frequencies)))
-        self.assertTrue(all(map(raman.util.is_numeric, self.spectrum.intensities)))
+        test_raman = raman.Spectrum.from_log_file('test_log.log', type='raman')
+        test_ir = raman.Spectrum.from_log_file('test_log.log', type='ir')
+
+        self.assertTrue(all(map(raman.util.is_numeric, test_raman.frequencies)))
+        self.assertTrue(all(map(raman.util.is_numeric, test_raman.intensities)))
+        self.assertTrue(all(map(raman.util.is_numeric, test_ir.frequencies)))
+        self.assertTrue(all(map(raman.util.is_numeric, test_ir.intensities)))
+        
+        self.assertEqual(test_raman, test_ir)
+        self.assertFalse(test_raman == test_ir)
 
 
 class TestDistanceMatrix(unittest.TestCase):

@@ -1,2 +1,2 @@
-# raman
-Simple python library for analyzing raman spectral data.
+# gparse
+Simple python library for parsing/analyzing spectral data created by Gaussian.

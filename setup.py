@@ -1,11 +1,11 @@
 from setuptools import setup
 
-setup(name='raman',
+setup(name='gparse',
       version='0.0.1',
-      description='Simple library for handling raman spectral data.',
-      url='https://github.com/SeanMcGrath/raman',
+      description='Simple library for handling Gaussian vibrational analysis data.',
+      url='https://github.com/SeanMcGrath/gparse',
       author='Sean McGrath',
       author_email='srmcgrat@umass.edu',
       license='MIT',
-      packages=['raman'],
+      packages=['gparse'],
       zip_safe=False)

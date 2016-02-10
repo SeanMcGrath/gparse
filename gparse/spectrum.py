@@ -22,7 +22,7 @@ def lorentzian(x_value, amplitude, center, width):
 
 class Spectrum:
     """
-    Class to represent one raman spectrum.
+    Class to represent one vibrational spectrum.
 
     Consists of a set of frequencies and their corresponding intensities.
     """
@@ -147,10 +147,12 @@ class Spectrum:
             return Spectrum(frequencies, intensities, width)
 
     @staticmethod
-    def from_log_file(filename):
+    def from_log_file(filename, type='raman'):
         """
         Parse a Gaussian .log file and create a Spectrum.
         :param filename: the path to the .log file
+        :param type: 'raman' or 'r' for a raman spectrum, 'ir' or 'infrared'
+        for an infrared spectrum
         """
 
         def _parse_line(line):
@@ -164,7 +166,11 @@ class Spectrum:
 
         frequencies = flatten([_parse_line(line.strip())
                                for line in lines if 'Frequencies' in line])
-        intensities = flatten([_parse_line(line.strip())
+        if type in ('r', 'raman'):
+            intensities = flatten([_parse_line(line.strip())
                                for line in lines if 'Raman Activ' in line])
+        elif type in ('ir', 'infrared'):
+            intensities = flatten([_parse_line(line.strip())
+                               for line in lines if 'IR Inten' in line])
 
         return Spectrum(frequencies, intensities)
