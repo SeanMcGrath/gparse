@@ -28,10 +28,10 @@ class Spectrum:
     """
 
     # Default number of points in the list representation of a spectrum.
-    NUMBER_OF_POINTS = 1000
+    NUMBER_OF_POINTS = 5000
 
     # Default width of lorentzians fitted to the data.
-    LORENTZIAN_WIDTH = 10
+    LORENTZIAN_WIDTH = 6
 
     def __init__(self, frequencies, intensities, width=LORENTZIAN_WIDTH):
         """
@@ -43,6 +43,8 @@ class Spectrum:
 
         if len(frequencies) != len(intensities):
             raise ValueError('There must be an equal number of frequencies and intensities.')
+        if len(frequencies) < 1:
+            raise ValueError('There must be at least one frequency-intensity pair.')
         self.frequencies = frequencies
         self.intensities = intensities
         self.lorentzian_width = width
@@ -99,14 +101,16 @@ class Spectrum:
 
         return [self.fit_function(x) for x in self.x_array(points)]
 
-    def plot(self, axis, points=NUMBER_OF_POINTS, **kwargs):
+    def plot(self, axis, points=NUMBER_OF_POINTS, stems=False, **kwargs):
         """
         Plot the lorentzian representation of the spectrum.
-        :param ax: a matplotlib axis object on which to plot.
+        l:param ax: a matplotlib axis object on which to plot.
         :param kwargs: keyword arguments to be passed to matplotlib.Axis.plot
         """
 
         axis.plot(self.x_array(points), self.as_list(points), **kwargs)
+        if stems:
+            axis.stem(self.frequencies, self.intensities, markerfmt=' ')
 
     def copy(self):
         """
@@ -147,7 +151,7 @@ class Spectrum:
             return Spectrum(frequencies, intensities, width)
 
     @staticmethod
-    def from_log_file(filename, type='raman'):
+    def from_log_file(filename, type='raman', width=LORENTZIAN_WIDTH):
         """
         Parse a Gaussian .log file and create a Spectrum.
         :param filename: the path to the .log file
@@ -172,5 +176,15 @@ class Spectrum:
         elif type in ('ir', 'infrared'):
             intensities = flatten([_parse_line(line.strip())
                                for line in lines if 'IR Inten' in line])
+        else:
+            raise ValueError("type must be r, ir, raman, or infrared")
 
-        return Spectrum(frequencies, intensities)
+        return Spectrum(frequencies, intensities, width)
+
+    @staticmethod
+    def average_function(spectra):
+        """
+        Compute a function that represents an average over the input spectra.
+        :param spectra: an iterable of Spectrum objects
+        """
+        return lambda x: sum([s.fit_function(x)/len(spectra) for s in spectra]) 
