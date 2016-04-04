@@ -107,8 +107,8 @@ class DistanceMatrix:
 
         if distance_threshold:
             squared_differences = \
-                [(a - b)**2 for a, b in zip(self.flattened, other.flattened) \
-                if abs(a - b) < distance_threshold]
+                [(a - b)**2 for a, b in zip(self.flattened, other.flattened)
+                 if abs(a - b) < distance_threshold]
 
         else:
             squared_differences = \
@@ -169,7 +169,8 @@ class DistanceMatrix:
         for line in lines:
             if re.match(DistanceMatrix.MATRIX_REGEX, line.strip()):
                 split_lines.append(line.strip().split())
-            # Distance matrix is always terminated by a line containing 'stoich'
+            # Distance matrix is always terminated by a line containing
+            # 'stoich'
             if 'stoich' in line.lower():
                 break
 
@@ -177,7 +178,8 @@ class DistanceMatrix:
         number_atoms = max([int(line[0]) for line in split_lines])
 
         # Need a matrix to insert values in
-        temp_matrix = [[None for i in range(number_atoms)] for i in range(number_atoms)]
+        temp_matrix = [[None for i in range(number_atoms)]
+                       for i in range(number_atoms)]
 
         # now we iterate through the lines: the first number in each line
         # is the atom number. We use this to index into the matrix.
@@ -191,8 +193,9 @@ class DistanceMatrix:
             if current_index is 1:
                 column_offset = 0
             while current_column < len(line) - 2:
-                distance = line[current_column+2]
-                temp_matrix[current_index][current_column + column_offset] = distance
+                distance = line[current_column + 2]
+                temp_matrix[current_index][
+                    current_column + column_offset] = distance
                 current_column += 1
             old_index = current_index
 

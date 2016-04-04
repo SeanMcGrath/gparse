@@ -6,6 +6,15 @@ Part of package raman.
 Copyright Sean McGrath 2015. Issued under the MIT License.
 """
 
+import math
+import os
+import datetime
+
+try:
+    import markdown
+except:
+    markdown = None
+
 from functools import partial
 from .util import linspace, is_numeric, integrate, flatten
 
@@ -31,7 +40,7 @@ class Spectrum:
     NUMBER_OF_POINTS = 5000
 
     # Default width of lorentzians fitted to the data.
-    LORENTZIAN_WIDTH = 6
+    LORENTZIAN_WIDTH = 3.3
 
     def __init__(self, frequencies, intensities, width=LORENTZIAN_WIDTH):
         """
@@ -42,9 +51,11 @@ class Spectrum:
         """
 
         if len(frequencies) != len(intensities):
-            raise ValueError('There must be an equal number of frequencies and intensities.')
+            raise ValueError(
+                'There must be an equal number of frequencies and intensities.')
         if len(frequencies) < 1:
-            raise ValueError('There must be at least one frequency-intensity pair.')
+            raise ValueError(
+                'There must be at least one frequency-intensity pair.')
         self.frequencies = frequencies
         self.intensities = intensities
         self.lorentzian_width = width
@@ -73,9 +84,10 @@ class Spectrum:
         diffence spectrum.
         """
 
-        difference_function = \
-            lambda x: self.fit_function(x) - other.fit_function(x)
-        return difference_function
+        return lambda x: self.fit_function(x) - other.fit_function(x)
+
+    def set_width(self, width):
+        self.lorentzian_width = width
 
     @property
     def fit_function(self):
@@ -172,10 +184,10 @@ class Spectrum:
                                for line in lines if 'Frequencies' in line])
         if type in ('r', 'raman'):
             intensities = flatten([_parse_line(line.strip())
-                               for line in lines if 'Raman Activ' in line])
+                                   for line in lines if 'Raman Activ' in line])
         elif type in ('ir', 'infrared'):
             intensities = flatten([_parse_line(line.strip())
-                               for line in lines if 'IR Inten' in line])
+                                   for line in lines if 'IR Inten' in line])
         else:
             raise ValueError("type must be r, ir, raman, or infrared")
 
@@ -187,4 +199,224 @@ class Spectrum:
         Compute a function that represents an average over the input spectra.
         :param spectra: an iterable of Spectrum objects
         """
-        return lambda x: sum([s.fit_function(x)/len(spectra) for s in spectra]) 
+        return lambda x: sum([s.fit_function(x) / len(spectra) for s in spectra])
+
+
+class SpectralPeak:
+    """
+    Represents one peak in a spectrum with associated information.
+    """
+
+    def __init__(
+            self,
+            number,
+            frequency,
+            reduced_mass,
+            frc_const,
+            ir_intensity,
+            raman_activity,
+            depolar_p,
+            depolar_u):
+
+        self.number = number
+        self.frequency = frequency
+        self.reduced_mass = reduced_mass
+        self.frc_const = frc_const
+        self.raman_activity = raman_activity
+        self.ir_intensity = ir_intensity
+        self.depolar_p = depolar_p
+        self.depolar_u = depolar_u
+        self.atoms = []
+
+    def __repr__(self):
+        return 'Peak #{}: {} 1/cm'.format(self.number, self.frequency)
+
+    def assign(self, heavy_only=False):
+        return list(filter(lambda x: x.eigen_sum != 0 and (x.element > 1 or heavy_only is False),
+                           sorted(self.atoms, key=lambda x: x.eigen_sum)[::-1]))
+
+
+class Atom:
+    """
+    Represents one vibrating atom in a molecule.
+    """
+
+    elements = {
+        '1': 'hydrogen',
+        '6': 'carbon',
+        '8': 'oxygen'
+    }
+
+    def __init__(self, number, element, x, y, z):
+
+        self.number = number
+        self.element = element
+        self.x = x
+        self.y = y
+        self.z = z
+        self.eigen_sum = math.sqrt(x**2 + y**2 + x**2)
+
+    @property
+    def el_name(self):
+        try:
+            return self.elements[self.element]
+        except:
+            return str(self.element)
+
+
+class PeakAssigner:
+
+    def __init__(self, log_file, heavy_only=False):
+
+        self.peaks = []
+        self.index = 0
+        self.heavy_only = heavy_only
+        self.done = False
+
+        with open(log_file) as f:
+            self.lines = f.readlines()
+
+        for i in range(len(self.lines)):
+            if 'and normal coordinates:' in self.lines[i]:
+                self.index = i + 1
+                break
+
+        while not self.done:
+            self.make_peaks()
+
+    def __repr__(self):
+
+        out = ''
+        for peak in self.peaks:
+            out += str(peak) + '\n'
+            for assignment in peak.assign(self.heavy_only):
+                out += str(assignment) + '\n'
+            out += '\n'
+
+        return out
+
+    @staticmethod
+    def parse_floats(line):
+        floats = []
+        for el in line.split():
+            try:
+                f = float(el)
+                floats.append(f)
+            except:
+                pass
+
+        return floats
+
+    def make_peaks(self):
+
+        peak_props = [[int(el) for el in self.lines[self.index].split()]]
+        self.index += 2
+
+        while 'Atom' not in self.lines[self.index]:
+            peak_props.append(self.parse_floats(self.lines[self.index]))
+            self.index += 1
+
+        prop_zip = list(zip(*peak_props))
+        for props in prop_zip:
+            self.peaks.append(SpectralPeak(*props))
+
+        self.index += 1
+        while not self.lines[self.index].startswith('        '):
+            line = self.lines[self.index]
+            if line is '\n':
+                self.done = True
+                break
+            split_line = line.split()
+            new_atoms = []
+            number = int(split_line[0])
+            element = int(split_line[1])
+            for i in range(len(prop_zip)):
+                x = float(split_line[2 + i * 3])
+                y = float(split_line[3 + i * 3])
+                z = float(split_line[4 + i * 3])
+                self.peaks[-(len(prop_zip) - i)
+                           ].atoms.append(Atom(number, element, x, y, z))
+            self.index += 1
+
+
+class PeakReporter:
+
+    def __init__(self, log_file, heavy_only=False):
+
+        self.log_file = log_file
+        self.spectrum = Spectrum.from_log_file(log_file)
+        self.assignments = PeakAssigner(log_file, heavy_only)
+
+    @staticmethod
+    def report_setup(path=None):
+        if not path:
+            path = 'peak_report'
+        try:
+            os.mkdir(path)
+        except OSError:
+            pass
+        return path
+
+    def report(self, path=None, plt=None):
+        report_path = self.report_setup(path)
+        currdir = os.getcwd()
+        os.chdir(report_path)
+
+        with open('report.md', 'w') as outfile:
+            outfile.write('# Peak Assignment Report\n')
+
+            outfile.write('{} peaks found in {} at {}\n\n'.format(
+                len(self.spectrum), self.log_file, datetime.datetime.now()))
+
+            for peak in self.assignments.peaks:
+                outfile.write('[{}](#{})  \n'.format(
+                    peak.frequency, peak.frequency))
+
+            outfile.write('  \n')
+
+            for peak in self.assignments.peaks:
+                outfile.write('## Peak #{}: {} 1/cm <a name="{}"></a>  \n'.format(
+                    peak.number, peak.frequency, peak.frequency))
+                outfile.write('Raman activity: {}  \n'.format(
+                    peak.raman_activity))
+                if plt:
+                    ax = plt.gca()
+                    self.spectrum.plot(ax)
+
+                    plt.plot(self.spectrum.x_array(),
+                             [lorentzian(
+                                 x,
+                                 peak.raman_activity,
+                                 peak.frequency,
+                                 self.spectrum.lorentzian_width) for x in self.spectrum.x_array()],
+                             '--')
+
+                    plt.xlim(peak.frequency * 0.8, peak.frequency * 1.2)
+                    plt.ylim(0, peak.raman_activity * 1.2)
+                    plot_name = '{}.png'.format(peak.frequency)
+                    plt.savefig(plot_name)
+                    outfile.write('![{}]({})\n\n'.format(plot_name, plot_name))
+                    plt.cla()
+
+                outfile.write(
+                    '| Atom # | Element | Sum of vibrational eigenvalues |\n')
+                outfile.write(
+                    '|--------|---------|--------------------------------|\n')
+                for atom in peak.assign():
+                    outfile.write('| {} | {} | {} |\n'.format(
+                        atom.number, atom.el_name, atom.eigen_sum))
+                outfile.write('\n')
+
+        if markdown:
+            with open('report.md') as md_file:
+                text = md_file.read()
+                html = markdown.markdown(
+                    text, extensions=['markdown.extensions.tables'])
+            with open('report.html', 'w',
+                      encoding='utf-8', errors='xmlcharrefreplace') as html_file:
+                html_file.write(html)
+
+        else:
+            print('Install markdown to convert report to html \n\n pip install markdown')
+
+        os.chdir(currdir)

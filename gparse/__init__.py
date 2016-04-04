@@ -7,7 +7,7 @@ Copyright Sean McGrath 2015. Issued under the MIT License.
 """
 
 
-from .spectrum import Spectrum
+from .spectrum import Spectrum, PeakAssigner, PeakReporter
 from .matrix import DistanceMatrix
 from .configuration import Configuration
 
